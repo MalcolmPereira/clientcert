@@ -1,0 +1,16 @@
+{
+  "CN": "malcolm.io.root.ca",
+  "key": {
+    "algo": "rsa",
+    "size": 4096
+  },
+  "names": [
+    {
+      "C": "USA",
+      "L": "Ausburn",
+      "O": "malcolm.io-Root-CA",
+      "OU": "malcolm.io-Root-CA",
+      "ST": "WA"
+    }
+  ]
+}

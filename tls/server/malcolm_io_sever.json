@@ -1,0 +1,20 @@
+{
+  "CN": "malcolm.io.server",
+  "key": {
+    "algo": "rsa",
+    "size": 4096
+  },
+  "names": [
+    {
+      "C": "USA",
+      "L": "Ausburn",
+      "O": "malcolm.io Server Cert",
+      "OU": "malcolm.io Server Cert",
+      "ST": "WA"
+    }
+  ],
+  "hosts": [
+    "malcolm.io.server",
+    "localhost"
+  ]
+}

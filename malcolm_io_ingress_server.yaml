@@ -1,0 +1,28 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    nginx.ingress.kubernetes.io/auth-tls-secret: "malcolmio/malcolmio-ca-tls"
+    nginx.ingress.kubernetes.io/auth-tls-verify-client: "optional"
+    nginx.ingress.kubernetes.io/auth-tls-verify-depth: "1"
+    nginx.ingress.kubernetes.io/auth-tls-pass-certificate-to-upstream: "true"
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+  name: clientcert-ingress-server
+  namespace: malcolmio
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - malcolm.io.server
+      secretName: malcolmio-server-tls
+  rules:
+    - host: malcolm.io.server
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: clientcert
+                port:
+                  number: 8443

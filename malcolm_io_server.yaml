@@ -1,0 +1,54 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: clientcert
+  labels:
+    appname: clientcert
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      appname: clientcert
+  template:
+    metadata:
+      labels:
+        appname: clientcert
+    spec:
+      containers:
+        - name: clientcert
+          #image: malcolmpereira/clientcert:1.0.0-ARM64
+          image: malcolmpereira/clientcert:1.0.0
+          imagePullPolicy: Never
+          command: ["java"]
+          args:
+            [
+              "-server",
+              "-cp",
+              "@/app/jib-classpath-file",
+              "com.malcolm.springprojects.clientcert.ClientCertApplication",
+            ]
+          ports:
+            - containerPort: 8443
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "500m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: clientcert
+  labels:
+    appname: clientcert
+spec:
+  selector:
+    appname: clientcert
+  ports:
+    - protocol: TCP
+      port: 8443
+      targetPort: 8443
+

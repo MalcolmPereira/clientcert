@@ -1,0 +1,19 @@
+{
+  "CN": "malcolm.io.client.2",
+  "key": {
+    "algo": "rsa",
+    "size": 4096
+  },
+  "names": [
+    {
+      "C": "USA",
+      "L": "Ausburn",
+      "O": "Client Certificate 2",
+      "OU": "Client Certificate 2",
+      "ST": "WA"
+    }
+  ],
+  "hosts": [
+    "malcolm.io.client.2"
+  ]
+}
