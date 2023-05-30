@@ -278,6 +278,8 @@ Select client certificate and click OK, we should now see subject for associated
 Java code just parses available client certificate and returns the subject name.
 
 ```
+   private static final String SSL_CLIENT_CERT_ATTRIBUTE = "javax.servlet.request.X509Certificate";
+
    ...
    X509Certificate[] certs = (X509Certificate[]) this.context.getAttribute(SSL_CLIENT_CERT_ATTRIBUTE);
    LOGGER.info("Client Certificate from Request Attribute : {} {}", SSL_CLIENT_CERT_ATTRIBUTE, certs);
@@ -561,15 +563,50 @@ Choose a client certificate and click OK to view client certificate details.
 
 ![Client Certificate Details](./readme_assets/client_cert_details.png)
 
+Java code reads the ssl-client-cert request header and parses the URL encode certificate forwarded by Ingress-Nginx.
+
+```bash
+
+      private static final String DEFAULT_CERT_TYPE = "X.509";
+      private static final String SSL_CLIENT_CERT_HEADER = "ssl-client-cert";
+      private static final String LINE_BREAK_URL_ENCODED = "%0A";
+      private static final String LINE_BREAK_REPLACE = "\n";
+      private static final String EQUAL_ENCODED = "%3D";
+      private static final String EQUAL_REPLACE = "=";
+
+      ....
+      ....
+      Object clientCert = this.context.getHeader(SSL_CLIENT_CERT_HEADER);
+      LOGGER.info("Client Certificate from Request Header : {}", clientCert);
+
+      if(clientCert != null && clientCert.toString().length() > 0) {
+            try (InputStream inputStream = new ByteArrayInputStream(
+                    URLDecoder.decode(
+                         clientCert.toString()
+                             .replaceAll(LINE_BREAK_URL_ENCODED, LINE_BREAK_REPLACE), StandardCharsets.UTF_8.name())
+                             .replaceAll(EQUAL_ENCODED, EQUAL_REPLACE).getBytes()
+                        )
+                ) {
+                CertificateFactory certificateFactory = CertificateFactory.getInstance(DEFAULT_CERT_TYPE);
+                X509Certificate certificate = (X509Certificate) certificateFactory.generateCertificate(inputStream);
+                return certificate.getSubjectX500Principal().getName();
+            } catch (CertificateException | IOException err) {
+                LOGGER.error("Error while getting client certificate details", err);
+            }
+      }
+      ...
+```
+
+
 Now let's delete client certificate from the browser and try to access the client details page again.
 
 For macOS remove previously imported certificate from the keychain access, in case of windows remove it from certificate snap-in.
 
 Accessing [Client Details](https://malcolm.io.client/client) will now display error code 400, no required SSL certificate was sent.
 
-![No Client Certificate](./readme_assets/no_required_certificates.png)
-
 You may have to restart browser to see 400 dad eequest error, browser may cache previous response.
+
+![No Client Certificate](./readme_assets/no_required_certificates.png)
 
 Apply the another ingress that makes client certificate optional i.e. we are setting ** nginx.ingress.kubernetes.io/auth-tls-verify-client** to optional and we are using another hostname namely **malcolm.io.server** this time.
 
