@@ -604,11 +604,11 @@ For macOS remove previously imported certificate from the keychain access, in ca
 
 Accessing [Client Details](https://malcolm.io.client/client) will now display error code 400, no required SSL certificate was sent.
 
-You may have to restart browser to see 400 dad eequest error, browser may cache previous response.
+You may have to restart browser to see 400 bad request error, browser may cache previous response.
 
 ![No Client Certificate](./readme_assets/no_required_certificates.png)
 
-Apply the another ingress that makes client certificate optional i.e. we are setting ** nginx.ingress.kubernetes.io/auth-tls-verify-client** to optional and we are using another hostname namely **malcolm.io.server** this time.
+Apply another ingress that makes client certificate optional i.e. we are setting ** nginx.ingress.kubernetes.io/auth-tls-verify-client** to optional and using another hostname namely, **malcolm.io.server** this time.
 
 ```yaml
 apiVersion: networking.k8s.io/v1
@@ -641,7 +641,7 @@ spec:
                   number: 8443
 ```
 
-Apply the ingress with optional client certificate.
+Apply ingress with optional client certificate.
 
 ```bash
 kubectl apply -f malcolm_io_ingress_server.yaml --namespace=malcolmio
