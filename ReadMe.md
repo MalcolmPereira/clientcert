@@ -2,16 +2,17 @@
 
 ## TLDR;
 
-Simple walk through to get up and running with M-TLS, Mutual TLS - client certificate validation on Ingress-Nginx controller in a local Kubernetes cluster like DockerDesktop.
+Simple walk through to get up and running with M-TLS; Mutual TLS - client certificate validation with Ingress-Nginx controller in a local Kubernetes cluster like DockerDesktop.
 
 Show me the code.
+
 https://github.com/MalcolmPereira/clientcert
 
 ## Sample Application
 
 The sample application is a simple SpringBoot echo application that is accessed using a client certificate, echoing back subject associated with client certificate. This is then deployed on a local Kubernetes cluster with Ingress-Nginx controller configured for Mutual TLS.
 
-Mutual TLS, is a two-way TLS authentication mechanism where both client and server are authenticated using certificates. The client certificate is validated by the server and the server certificate is validated by the client. This is different from the traditional TLS where only the server is authenticated using a certificate.
+Mutual TLS, is a two-way TLS authentication mechanism where both client and server are authenticated using certificates. The client certificate is validated by server and server certificate is validated by client. This is different from the traditional TLS where only server is authenticated using a certificate.
 
 
 ## Generate TLS Material
@@ -29,11 +30,11 @@ Runtime: go1.17
 
 **NOTE!!!!:**
 
-We are genrating are storing TLS material in a source code repo, you will never do this in a real production setup, since this is just a simple walkthrough and tls material is throw away with no real usage or implications, I am proceeding this route. Please do not commit TLS keys or secrets in production set up.
+We are genrating are storing TLS artifacts in a source code repo, you will never do this in a real production setup, since this is just a simple walkthrough and trust material is throw away with no real usage or implications, I am proceeding this route. Please do not commit TLS keys or secrets in production set up.
 
 ### 1. Generate Root CA TLS material
 
-Generate ca using cfssl, CA certificate definitions are in the tls/ca/malcolm_io_ca.json file. We generate CA Certificate and then use that to sign server certificate and client certificates.
+Generate ca using cfssl, CA certificate definitions are in the tls/ca/malcolm_io_ca.json file. We generate CA certificate and then use that to sign server certificate and client certificates.
 
 ```bash
 cfssl gencert -initca tls/ca/malcolm_io_ca.json | cfssljson -bare tls/ca/malcolm_io_ca
@@ -77,12 +78,12 @@ openssl pkcs12 -export -legacy -out tls/server/malcolm_io_sever.pfx -inkey tls/s
 Enter Export Password:
 Verifying - Enter Export Password:
 
-Password used in MalcolmIO
+Password used is MalcolmIO
 ```
 
 We also want to include a valid trust store for our application and can use cacerts that comes with JDK which is under JAVA_HOME/lib/security. We will use cacerts from JDK to create a trust store for our application.
 
-Copy cacerts from JDK to the tls/server directory and execute the following to change default truststore password "changeit" for trust store to "malcolmio"
+Copy cacerts from JDK to the tls/server directory and execute the following to change default truststore password "changeit" for trust store to "MalcolmIO"
 
 
 ```bash
@@ -91,6 +92,8 @@ keytool -storepasswd -keystore tls/server/cacerts
 Enter keystore password:
 New keystore password:
 Re-enter new keystore password:
+
+Password used is MalcolmIO
 ```
 
 We now want to import root ca certificate into trust store.
@@ -131,7 +134,7 @@ openssl pkcs12 -export -legacy -out tls/client/client_cert_1/malcolm.io.client_1
 Enter Export Password:
 Verifying - Enter Export Password:
 
-Password used in MalcolmIO
+Password used is MalcolmIO
 ```
 
 Similarly generate client certificate for client_cert_2 and client_cert_3.
@@ -154,7 +157,7 @@ openssl pkcs12 -export -legacy -out tls/client/client_cert_2/malcolm.io.client_2
 Enter Export Password:
 Verifying - Enter Export Password:
 
-Password used in MalcolmIO
+Password used is MalcolmIO
 ```
 
 ```bash
@@ -173,7 +176,7 @@ openssl pkcs12 -export -legacy -out tls/client/client_cert_3/malcolm.io.client_3
 Enter Export Password:
 Verifying - Enter Export Password:
 
-Password used in MalcolmIO
+Password used is MalcolmIO
 ```
 
 ### 4. Generate CA Signed Ingress Certificate
@@ -202,10 +205,10 @@ openssl pkcs12 -export -legacy  -out tls/ingress/malcolm_io_ingress.pfx -inkey t
 Enter Export Password:
 Verifying - Enter Export Password:
 
-Password used in MalcolmIO
+Password used is MalcolmIO
 ```
 
-Now that we have all TSL material in place we can proceed by first integrating server side certificates to the spring boot application. Once we have validated desired behavior we can proceed Kubernetes deployment and Ingress-Nginx.
+Now that we have all TLS material in place we can proceed by first integrating server side certificates to the spring boot application. Once we have validated desired behavior we can proceed Kubernetes deployment and Ingress-Nginx.
 
 
 ## Server Application
@@ -222,7 +225,7 @@ cp tls/server/malcolm_io_sever.crt src/main/resources/
 
 We could use pem keys for application as well, but we will just use pfx file.
 
-Update application properties for server TSL configuration.
+Update application properties for server TLS configuration.
 
 ```bash
 server.port=${SERVERPORT:8443}
@@ -237,7 +240,9 @@ server.ssl.key-store-password=${KEYSTORECRED:MalcolmIO}
 server.ssl.client-auth=want
 ```
 
-The important setting here is server.ssl.client-auth=want i.e. if a client certificate exists we will use it else return no client certificate available, had we set this to "need" instead of "want" the server would have rejected the request if no client certificate was available.
+The important setting here is server.ssl.client-auth=want i.e. if a client certificate is provided in the request we will use it else return no client certificate available, had we set this to "need" instead of "want" the server would have rejected the request if no client certificate was available.
+
+Also note that in a production setup, credentials will come from some secret environment variable.
 
 Start up the application.
 
@@ -254,19 +259,19 @@ Validate [Server Details](https://localhost:8443/server)
 
 ![Server Details](./readme_assets/server_details.png)
 
-Access [Client Details](https://localhost:8443/client) without any client certificate which returns No Client Certificate as expected.
+Access [Client Details](https://localhost:8443/client) without any client certificate which returns No Client Certificate found as expected.
 
 ![Client Details No Client Certificate](./readme_assets/client_details_no_client_cert.png)
 
-Add client certificate to the browser
+Add client certificate to the browser;
 
-Example for Chrome, go to settings -> Manage Certificates -> Import, on MAC OS use Keychain Access to import the client certificates.
+Example for Chrome, go to settings -> Manage Certificates -> Import, on MAC OS use Keychain Access to import the client certificates, on windows certificate snap in can be used.
 
-Access [Client Details](https://localhost:8443/client) with client certificate in place , this will prompt for the client certificate
+Access [Client Details](https://localhost:8443/client) with client certificate in place , this will prompt for the client certificate to be used.
 
 ![Certificate Prompt](./readme_assets/chrome_certificate_prompt.png)
 
-Select client certificate and click OK, we should not see the subject for the associated client certificate.
+Select client certificate and click OK, we should now see subject for associated client certificate as output.
 
 ![Client Details With Client Certificate](./readme_assets/client_details.png)
 
@@ -384,7 +389,7 @@ helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
 
 helm repo update ingress-nginx
 
-helm upgrade --install --namespace ingress-nginx --create-namespace --set controller.extraArgs.default-ssl-certificate="malcolmio/malcolmio-ingress-tls" ingress-nginx ingress-nginx/ingress-nginx
+helm upgrade --install --namespace ingress-nginx --create-namespace --set controller.extraArgs.default-ssl-certificate="malcolmio/malcolmio-ingress-tls" --version 4.6.1 ingress-nginx ingress-nginx/ingress-nginx
 
 Release "ingress-nginx" does not exist. Installing it now.
 NAME: ingress-nginx
@@ -564,8 +569,9 @@ Accessing [Client Details](https://malcolm.io.client/client) will now display er
 
 ![No Client Certificate](./readme_assets/no_required_certificates.png)
 
+You may have to restart browser to see 400 dad eequest error, browser may cache previous response.
 
-Apply the another ingress that makes the client certificate optional i.e. we are setting ** nginx.ingress.kubernetes.io/auth-tls-verify-client** to optional and we are using another hostname namely **malcolm.io.server** this time.
+Apply the another ingress that makes client certificate optional i.e. we are setting ** nginx.ingress.kubernetes.io/auth-tls-verify-client** to optional and we are using another hostname namely **malcolm.io.server** this time.
 
 ```yaml
 apiVersion: networking.k8s.io/v1
